@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tasker}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-tasker}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Scripts here run once, on the first start with an empty volume.
+      - ./init/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    image: ${DOCKERHUB_USERNAME:-local}/tas-ker-backend:${IMAGE_TAG:-dev}
+    environment:
+      PORT: "8080"
+      POSTGRES_URL: postgres://${POSTGRES_USER:-tasker}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-tasker}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+
+  frontend:
+    build: ./frontend
+    image: ${DOCKERHUB_USERNAME:-local}/tas-ker-frontend:${IMAGE_TAG:-dev}
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-3000}:8080"
+
+volumes:
+  pgdata:
