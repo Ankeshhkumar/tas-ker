@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -18,6 +22,7 @@ jobs:
           go-version: "1.22"
       - run: go vet ./...
       - run: go test ./...
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -34,3 +39,86 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: govulncheck
+        working-directory: backend
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.3 ./...
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: npm audit
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
+
+  dockerfile-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.service }}/Dockerfile
+
+  images:
+    needs: [backend, frontend, secret-scan, dependency-scan, dockerfile-lint]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image (local only)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.service }}
+          load: true
+          tags: tas-ker-${{ matrix.service }}:ci
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: tas-ker-${{ matrix.service }}:ci
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Log in to Docker Hub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push image
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: |
+            ${{ vars.DOCKERHUB_USERNAME }}/tas-ker-${{ matrix.service }}:${{ github.sha }}
+            ${{ vars.DOCKERHUB_USERNAME }}/tas-ker-${{ matrix.service }}:latest
+          cache-from: type=gha,scope=${{ matrix.service }}
