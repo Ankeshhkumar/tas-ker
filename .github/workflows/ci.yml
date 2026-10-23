@@ -57,9 +57,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: backend/go.mod
+      - run: go version
       - name: govulncheck
         working-directory: backend
-        run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.3 ./...
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
