@@ -57,7 +57,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: backend/go.mod
-	  check-latest: true
+          check-latest: true
       - run: go version
       - name: govulncheck
         working-directory: backend  
