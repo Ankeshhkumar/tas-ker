@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "git-ops/**"
   pull_request:
 
 permissions:
@@ -85,6 +87,7 @@ jobs:
     needs: [backend, frontend, secret-scan, dependency-scan, dockerfile-lint]
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         service: [backend, frontend]
     steps:

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tas-ker-config
+  namespace: tas-ker
+data:
+  POSTGRES_USER: ${POSTGRES_USER:-tasker}
+  POSTGRES_DB: ${POSTGRES_DB:-tasker}
