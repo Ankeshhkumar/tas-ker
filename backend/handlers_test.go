@@ -149,3 +149,15 @@ func TestSearch(t *testing.T) {
 		t.Fatalf("unexpected search result: %v", got)
 	}
 }
+
+func TestMetricsEndpoint(t *testing.T) {
+	s := &fakeStore{}
+	do(t, s, "GET", "/health", "") // generate one counted request
+	rec := do(t, s, "GET", "/metrics", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "http_requests_total") {
+		t.Fatal("metrics output is missing http_requests_total")
+	}
+}

@@ -27,7 +27,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /tasks", s.createTask)
 	mux.HandleFunc("PATCH /tasks/{id}", s.updateTask)
 	mux.HandleFunc("GET /search", s.searchTasks)
-	return logRequests(mux)
+	mux.Handle("GET /metrics", metricsHandler())
+	return logRequests(metricsMiddleware(mux))
 }
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
