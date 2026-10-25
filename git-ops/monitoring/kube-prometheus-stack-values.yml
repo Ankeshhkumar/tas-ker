@@ -1,0 +1,43 @@
+# Trimmed for a local kind cluster.
+
+# kind doesn't expose these control-plane components, so they'd show as permanently "down".
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+# node-exporter often crash-loops on Docker Desktop. Pod CPU/memory comes from the kubelet, not from it.
+nodeExporter:
+  enabled: false
+
+prometheus:
+  prometheusSpec:
+    retention: 6h
+    # Pick up ServiceMonitors and rules from every namespace, not only ones labelled for this chart.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 400Mi
+      limits:
+        memory: 900Mi
+
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        memory: 50Mi
+      limits:
+        memory: 128Mi
+
+grafana:
+  resources:
+    requests:
+      memory: 300Mi
+    limits:
+      memory: 768Mi
