@@ -20,7 +20,7 @@ spec:
         runAsUser: 65532
       containers:
         - name: backend
-          image: ankeshhkumar/tas-ker-backend:2e31a5e7049ba28aff30df12955926b31b19e397
+          image: ankeshhkumar/tas-ker-backend:88f64ca0675dda6e39551e1175d8273e1e2f890d
           ports:
             - containerPort: 8080
           env:
