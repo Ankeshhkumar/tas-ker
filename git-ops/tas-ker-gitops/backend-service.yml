@@ -3,9 +3,12 @@ kind: Service
 metadata:
   name: backend
   namespace: tas-ker
+  labels:
+   app: backend
 spec:
   selector:
     app: backend
   ports:
-    - port: 8080
+    - name: http
+      port: 8080
       targetPort: 8080
