@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tas-ker
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Ankeshhkumar/tas-ker.git
+    targetRevision: main
+    path: git-ops/tas-ker-gitops
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tas-ker
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
