@@ -18,7 +18,7 @@ spec:
         runAsUser: 101
       containers:
         - name: frontend
-          image: ankeshhkumar/tas-ker-frontend:2d9e257e665a1f0ee6c8b71a470632a05dc260d3
+          image: ankeshhkumar/tas-ker-frontend:8f572993f85b6b16b39a31642675b1e406f5301a
           ports:
             - containerPort: 8080
           readinessProbe:
