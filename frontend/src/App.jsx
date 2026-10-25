@@ -66,7 +66,7 @@ export default function App() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <h1 className="brand">Tas-ker</h1>
+        <h1 className="brand">Tas-ker by AK</h1>
         <nav aria-label="Projects">
           <ul>
             {projects.map((p) => (
