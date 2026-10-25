@@ -4,14 +4,44 @@ metadata:
   name: argocd-notifications-cm
   namespace: argocd
 data:
+  context: |
+    argocdUrl: "https://localhost:8443"
+
   service.slack: |
     token: $slack-token
 
-  template.slack-sync: |
+  template.slack-deployed: |
     message: |
-      Tas-ker *{{.app.metadata.name}}*: sync {{.app.status.operationState.phase}}, health {{.app.status.health.status}}, revision {{.app.status.sync.revision | trunc 7}}
+      :white_check_mark: *{{.app.metadata.name}}* deployed
+      Sync: {{.app.status.sync.status}} | Health: {{.app.status.health.status}}
+      Revision: `{{.app.status.sync.revision | trunc 7}}`
+      Finished: {{.app.status.operationState.finishedAt}}
+      <{{.context.argocdUrl}}/applications/{{.app.metadata.name}}|Open in Argo CD>
 
-  trigger.on-sync-done: |
-    - when: app.status.operationState != nil and app.status.operationState.phase in ['Succeeded', 'Failed', 'Error']
+  template.slack-health-degraded: |
+    message: |
+      :rotating_light: *{{.app.metadata.name}}* is {{.app.status.health.status}}
+      Sync: {{.app.status.sync.status}}
+      Revision: `{{.app.status.sync.revision | trunc 7}}`
+      Details: {{.app.status.health.message}}
+      <{{.context.argocdUrl}}/applications/{{.app.metadata.name}}|Open in Argo CD>
+
+  template.slack-sync-failed: |
+    message: |
+      :x: *{{.app.metadata.name}}* sync {{.app.status.operationState.phase}}
+      Revision: `{{.app.status.sync.revision | trunc 7}}`
+      Reason: {{.app.status.operationState.message}}
+      <{{.context.argocdUrl}}/applications/{{.app.metadata.name}}|Open in Argo CD>
+
+  trigger.on-deployed: |
+    - when: app.status.operationState != nil and app.status.operationState.phase == 'Succeeded' and app.status.health.status == 'Healthy'
       oncePer: app.status.sync.revision
-      send: [slack-sync]
+      send: [slack-deployed]
+
+  trigger.on-health-degraded: |
+    - when: app.status.health.status == 'Degraded'
+      send: [slack-health-degraded]
+
+  trigger.on-sync-failed: |
+    - when: app.status.operationState != nil and app.status.operationState.phase in ['Error', 'Failed']
+      send: [slack-sync-failed]
