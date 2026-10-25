@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: argocd
+data:
+  service.slack: |
+    token: $slack-token
+
+  template.slack-sync: |
+    message: |
+      Tas-ker *{{.app.metadata.name}}*: sync {{.app.status.operationState.phase}}, health {{.app.status.health.status}}, revision {{.app.status.sync.revision | trunc 7}}
+
+  trigger.on-sync-done: |
+    - when: app.status.operationState != nil and app.status.operationState.phase in ['Succeeded', 'Failed', 'Error']
+      oncePer: app.status.sync.revision
+      send: [slack-sync]
