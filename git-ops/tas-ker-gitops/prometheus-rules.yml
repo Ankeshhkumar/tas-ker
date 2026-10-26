@@ -1,0 +1,42 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: tas-ker-alerts
+  namespace: tas-ker
+spec:
+  groups:
+    - name: tas-ker
+      rules:
+        - alert: BackendDown
+          expr: absent(up{job="backend", namespace="tas-ker"} == 1)
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "No healthy backend pods"
+
+        - alert: HighErrorRate
+          expr: |
+            sum(rate(http_requests_total{status=~"5.."}[5m]))
+              / sum(rate(http_requests_total[5m])) > 0.05
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "More than 5% of requests are failing"
+
+        - alert: HighLatencyP95
+          expr: |
+            histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m]))) > 0.5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "p95 latency above 500 ms"
+
+        - alert: PodRestartingOften
+          expr: increase(kube_pod_container_status_restarts_total{namespace="tas-ker"}[10m]) > 3
+          labels:
+            severity: warning
+          annotations:
+            summary: "A tas-ker container restarted more than 3 times in 10 minutes"
